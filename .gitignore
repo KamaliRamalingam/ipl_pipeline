@@ -1,0 +1,21 @@
+# Python
+venv/
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+
+# Secrets - NEVER commit these
+.env
+dbt/profiles.yml
+
+# Airflow
+airflow/logs/
+airflow/.astro/
+
+# dbt
+dbt/target/
+dbt/dbt_packages/
+
+# OS
+.DS_Store
