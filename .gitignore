@@ -19,3 +19,4 @@ dbt/dbt_packages/
 
 # OS
 .DS_Store
+data/
