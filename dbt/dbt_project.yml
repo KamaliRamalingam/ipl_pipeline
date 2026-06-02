@@ -1,0 +1,48 @@
+# =============================================================
+# dbt Project Configuration — IPL Analytics Pipeline
+# Defines project structure, model paths, and materialisation
+# strategy for each layer of the pipeline
+# =============================================================
+
+name: ipl_pipeline
+version: '1.0.0'
+config-version: 2
+
+# Must match the profile name in profiles.yml
+profile: ipl_pipeline
+
+# Directory paths
+model-paths: ["models"]
+seed-paths: ["seeds"]
+test-paths: ["tests"]
+macro-paths: ["macros"]
+
+# Build output directory (gitignored)
+target-path: "target"
+clean-targets:
+  - "target"
+  - "dbt_packages"
+
+models:
+  ipl_pipeline:
+    # Staging: lightweight views over RAW tables
+    # No storage cost, always fresh
+    staging:
+      +materialized: view
+      +schema: STAGING
+
+    # Dimensions: slowly changing, stored as tables
+    # for join performance
+    dimensions:
+      +materialized: table
+      +schema: STAGING
+
+    # Facts: large grain tables, stored for query speed
+    facts:
+      +materialized: table
+      +schema: MARTS
+
+    # Marts: aggregated business-ready tables for Tableau
+    marts:
+      +materialized: table
+      +schema: MARTS
