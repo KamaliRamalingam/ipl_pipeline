@@ -87,40 +87,45 @@ USE SCHEMA IPL_DB.RAW;
 
 -- Raw matches table: one row per match, exact fields from cricsheet JSON
 CREATE TABLE IF NOT EXISTS RAW_MATCHES (
-    match_id         VARCHAR(50),
-    season           VARCHAR(10),
-    date             DATE,
-    venue            VARCHAR(200),
-    city             VARCHAR(100),
-    team1            VARCHAR(100),
-    team2            VARCHAR(100),
-    toss_winner      VARCHAR(100),
-    toss_decision    VARCHAR(10),
-    winner           VARCHAR(100),
-    win_by_runs      INTEGER,
-    win_by_wickets   INTEGER,
-    player_of_match  VARCHAR(100),
-    umpire1          VARCHAR(100),
-    umpire2          VARCHAR(100),
-    loaded_at        TIMESTAMP_NTZ DEFAULT CURRENT_TIMESTAMP()
+    match_id             VARCHAR(50),
+    match_date           DATE,
+    season               VARCHAR(10),
+    team1                VARCHAR(100),
+    team2                VARCHAR(100),
+    venue                VARCHAR(200),
+    city                 VARCHAR(100),
+    toss_winner          VARCHAR(100),
+    toss_decision        VARCHAR(10),
+    match_winner         VARCHAR(100),
+    win_by_runs          INTEGER,
+    win_by_wickets       INTEGER,
+    player_of_match      VARCHAR(100),
+    event_name           VARCHAR(100),
+    event_stage          VARCHAR(100),
+    event_match_number   INTEGER,
+    loaded_at            TIMESTAMP_NTZ DEFAULT CURRENT_TIMESTAMP()
 );
 
 -- Raw deliveries table: one row per ball, exact fields from cricsheet JSON
 CREATE TABLE IF NOT EXISTS RAW_DELIVERIES (
-    match_id         VARCHAR(50),
-    inning           INTEGER,
-    batting_team     VARCHAR(100),
-    bowling_team     VARCHAR(100),
-    over             INTEGER,
-    ball             INTEGER,
-    batter           VARCHAR(100),
-    bowler           VARCHAR(100),
-    non_striker      VARCHAR(100),
-    runs_batter      INTEGER,
-    runs_extras      INTEGER,
-    runs_total       INTEGER,
-    extras_type      VARCHAR(50),
-    wicket_kind      VARCHAR(50),
-    player_dismissed VARCHAR(100),
-    loaded_at        TIMESTAMP_NTZ DEFAULT CURRENT_TIMESTAMP()
+    match_id             VARCHAR(50),
+    inning_number        INTEGER,
+    batting_team         VARCHAR(100),
+    over_number          INTEGER,
+    ball_number          INTEGER,
+    batter               VARCHAR(100),
+    bowler               VARCHAR(100),
+    non_striker          VARCHAR(100),
+    runs_batter          INTEGER,
+    runs_extras          INTEGER,
+    runs_total           INTEGER,
+    extras_type          VARCHAR(50),
+    is_wicket            BOOLEAN,
+    wicket_kind          VARCHAR(50),
+    player_out           VARCHAR(100),
+    fielder              VARCHAR(100),
+    loaded_at            TIMESTAMP_NTZ DEFAULT CURRENT_TIMESTAMP()
 );
+
+
+
