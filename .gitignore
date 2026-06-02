@@ -22,3 +22,6 @@ dbt/dbt_packages/
 data/
 dbt/logs/
 dbt/.user.yml
+airflow/data/
+airflow/dbt/target/
+airflow/dbt/logs/

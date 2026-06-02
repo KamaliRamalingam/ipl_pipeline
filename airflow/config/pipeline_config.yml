@@ -1,0 +1,21 @@
+pipeline:
+  name: ipl_analytics_pipeline
+  data_folder: data
+  file_pattern: "*.json"
+  log_interval: 100
+
+azure:
+  container_name: raw
+  blob_prefix: ipl
+
+snowflake:
+  database: IPL_DB
+  warehouse: IPL_WH
+  raw_schema: RAW
+  staging_schema: STAGING
+  marts_schema: MARTS
+
+dbt:
+  project_dir: dbt
+  profiles_dir: dbt
+  target: dev

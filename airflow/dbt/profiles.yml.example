@@ -1,0 +1,19 @@
+# =============================================================
+# dbt Connection Profile — IPL Analytics Pipeline
+# Copy this file to profiles.yml and fill in your values
+# Never commit profiles.yml to Git
+# =============================================================
+
+ipl_pipeline:
+  target: dev
+  outputs:
+    dev:
+      type: snowflake
+      account: YOUR_ACCOUNT_IDENTIFIER
+      user: YOUR_USERNAME
+      password: "{{ env_var('SNOWFLAKE_PASSWORD') }}"
+      role: ACCOUNTADMIN
+      database: IPL_DB
+      warehouse: IPL_WH
+      schema: STAGING
+      threads: 4

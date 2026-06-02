@@ -1,0 +1,23 @@
+# =============================================================
+# dbt Connection Profile — IPL Analytics Pipeline
+# Connects dbt to Snowflake using environment variables
+# Never hardcode passwords — use env_var() for secrets
+# =============================================================
+
+ipl_pipeline:
+  target: dev
+  outputs:
+    dev:
+      type: snowflake
+      # Account identifier: ORGNAME-ACCOUNTNAME format
+      account: OTWEXHE-PW76076
+      user: VRPKAMALI
+      # Password read from .env — never committed to Git
+      password: "{{ env_var('SNOWFLAKE_PASSWORD') }}"
+      role: ACCOUNTADMIN
+      database: IPL_DB
+      warehouse: IPL_WH
+      # Default schema for dbt dev builds
+      schema: STAGING
+      # Parallel threads for model execution
+      threads: 4
