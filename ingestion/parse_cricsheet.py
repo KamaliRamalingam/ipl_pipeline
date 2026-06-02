@@ -29,7 +29,7 @@ def parse_match_info(file_path, match_id):
     return {
         "match_id": match_id,
         "match_date": (info.get("dates") or [None])[0],
-        "season": info.get("season"),
+        "season": str(info.get("season", "")),
         "team1": teams[0] if len(teams) > 0 else None,
         "team2": teams[1] if len(teams) > 1 else None,
         "venue": info.get("venue"),
