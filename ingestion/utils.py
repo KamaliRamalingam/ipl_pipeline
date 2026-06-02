@@ -32,6 +32,7 @@ def load_env():
         "SNOWFLAKE_USER",
         "SNOWFLAKE_PASSWORD",
         "SNOWFLAKE_DATABASE",
+        "SNOWFLAKE_SCHEMA",
         "SNOWFLAKE_WAREHOUSE",
         "SNOWFLAKE_ROLE",
         "DATA_FOLDER",
