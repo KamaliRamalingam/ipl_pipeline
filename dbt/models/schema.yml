@@ -1,0 +1,460 @@
+version: 2
+
+models:
+  # ── Staging ────────────────────────────────────────────────────────────────
+
+  - name: stg_matches
+    description: Cleaned and cast match-level records sourced from RAW.RAW_MATCHES.
+    columns:
+      - name: match_id
+        description: Unique identifier for the match (Cricsheet file stem).
+        tests:
+          - not_null
+          - unique
+      - name: match_date
+        description: Date the match was played.
+        tests:
+          - not_null
+      - name: season
+        description: IPL season year, normalised to four-digit string (e.g. '2008').
+        tests:
+          - not_null
+      - name: team1
+        description: First team as listed in the source file.
+        tests:
+          - not_null
+      - name: team2
+        description: Second team as listed in the source file.
+        tests:
+          - not_null
+      - name: venue
+        description: Name of the ground where the match was played.
+      - name: city
+        description: City where the match was played.
+      - name: toss_winner
+        description: Team that won the toss.
+        tests:
+          - not_null
+      - name: toss_decision
+        description: Decision made by the toss-winning team.
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['bat', 'field']
+      - name: match_winner
+        description: Winning team, null for ties or no-result matches.
+      - name: win_by_runs
+        description: Winning margin in runs; null when win was by wickets or no result.
+      - name: win_by_wickets
+        description: Winning margin in wickets; null when win was by runs or no result.
+      - name: player_of_match
+        description: Player awarded match of the match; null if not recorded.
+      - name: event_name
+        description: Name of the tournament event (e.g. Indian Premier League).
+      - name: event_stage
+        description: Stage of the event (e.g. Final, Qualifier).
+      - name: event_match_number
+        description: Sequential match number within the event.
+      - name: result_type
+        description: Derived result classification — runs, wickets, or tie/no result.
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['runs', 'wickets', 'tie/no result']
+      - name: loaded_at
+        description: Timestamp when the record was loaded into the RAW layer.
+
+  - name: stg_deliveries
+    description: Cleaned and cast delivery-level records sourced from RAW.RAW_DELIVERIES.
+    columns:
+      - name: match_id
+        description: Foreign key to stg_matches.match_id.
+        tests:
+          - not_null
+      - name: inning_number
+        description: Inning number (1 or 2).
+        tests:
+          - not_null
+      - name: batting_team
+        description: Team currently batting.
+        tests:
+          - not_null
+      - name: over_number
+        description: Over number within the inning (0-indexed).
+        tests:
+          - not_null
+      - name: ball_number
+        description: Ball position within the over (0-indexed).
+        tests:
+          - not_null
+      - name: batter
+        description: Name of the batter facing the delivery.
+        tests:
+          - not_null
+      - name: bowler
+        description: Name of the bowler delivering the ball.
+        tests:
+          - not_null
+      - name: non_striker
+        description: Name of the non-striking batter.
+      - name: runs_batter
+        description: Runs scored by the batter off this delivery.
+        tests:
+          - not_null
+      - name: runs_extras
+        description: Extra runs awarded on this delivery.
+        tests:
+          - not_null
+      - name: runs_total
+        description: Total runs (batter + extras) on this delivery.
+        tests:
+          - not_null
+      - name: extras_type
+        description: Type of extra, if any.
+        tests:
+          - accepted_values:
+              arguments:
+                values: ['wides', 'noballs', 'byes', 'legbyes', 'penalty']
+              config:
+                where: "extras_type is not null"
+      - name: is_wicket
+        description: True if this delivery resulted in a wicket.
+        tests:
+          - not_null
+      - name: wicket_kind
+        description: Method of dismissal, if a wicket fell.
+        tests:
+          - accepted_values:
+              arguments:
+                values:
+                  - caught
+                  - bowled
+                  - run out
+                  - lbw
+                  - stumped
+                  - hit wicket
+                  - obstructing the field
+                  - timed out
+                  - caught and bowled
+                  - retired hurt
+                  - retired out
+                  - handled the ball
+              config:
+                where: "wicket_kind is not null"
+      - name: player_out
+        description: Name of the dismissed player, if a wicket fell.
+      - name: fielder
+        description: Name of the fielder involved in the dismissal, if applicable.
+      - name: is_boundary
+        description: True if the batter scored 4 or more runs off the bat.
+        tests:
+          - not_null
+      - name: is_six
+        description: True if the batter scored 6 runs off the bat.
+        tests:
+          - not_null
+      - name: is_four
+        description: True if the batter scored exactly 4 runs off the bat.
+        tests:
+          - not_null
+      - name: loaded_at
+        description: Timestamp when the record was loaded into the RAW layer.
+
+  # ── Dimensions ─────────────────────────────────────────────────────────────
+
+  - name: dim_teams
+    description: Dimension of all unique IPL teams derived from match participants.
+    columns:
+      - name: team_id
+        description: Surrogate key for the team.
+        tests:
+          - not_null
+          - unique
+      - name: team_name
+        description: Full team name as it appears in the source data.
+        tests:
+          - not_null
+          - unique
+
+  - name: dim_venues
+    description: Dimension of all unique venues where IPL matches were played.
+    columns:
+      - name: venue_id
+        description: Surrogate key for the venue.
+        tests:
+          - not_null
+          - unique
+      - name: venue
+        description: Ground name.
+        tests:
+          - not_null
+          - unique
+      - name: city
+        description: City where the ground is located.
+
+  - name: dim_players
+    description: Dimension of all unique players who batted or bowled in IPL matches.
+    columns:
+      - name: player_id
+        description: Surrogate key for the player.
+        tests:
+          - not_null
+          - unique
+      - name: player_name
+        description: Player name as it appears in the delivery data.
+        tests:
+          - not_null
+          - unique
+
+  # ── Facts ──────────────────────────────────────────────────────────────────
+
+  - name: fct_match_results
+    description: >
+      One row per match with enriched match-level context, including surrogate
+      keys for team and venue dimensions.
+    columns:
+      - name: match_id
+        description: Natural key for the match.
+        tests:
+          - not_null
+          - unique
+      - name: match_date
+        description: Date the match was played.
+        tests:
+          - not_null
+      - name: season
+        description: IPL season year.
+        tests:
+          - not_null
+      - name: team1
+        description: Name of the first team.
+        tests:
+          - not_null
+      - name: team2
+        description: Name of the second team.
+        tests:
+          - not_null
+      - name: venue
+        description: Ground name.
+      - name: city
+        description: City where the match was played.
+      - name: toss_winner
+        description: Team that won the toss.
+        tests:
+          - not_null
+      - name: toss_decision
+        description: Decision made by the toss-winning team.
+        tests:
+          - not_null
+      - name: match_winner
+        description: Winning team; null for ties or no-result matches.
+      - name: win_by_runs
+        description: Winning margin in runs.
+      - name: win_by_wickets
+        description: Winning margin in wickets.
+      - name: result_type
+        description: Derived result classification.
+        tests:
+          - not_null
+      - name: player_of_match
+        description: Player of the match award recipient.
+      - name: event_name
+        description: Tournament name.
+      - name: event_stage
+        description: Stage within the tournament.
+      - name: event_match_number
+        description: Sequential match number in the event.
+      - name: team1_id
+        description: Foreign key to dim_teams for team1.
+        tests:
+          - not_null
+      - name: team2_id
+        description: Foreign key to dim_teams for team2.
+        tests:
+          - not_null
+      - name: winner_id
+        description: Foreign key to dim_teams for the winning team; null for ties/no result.
+      - name: venue_id
+        description: Foreign key to dim_venues.
+        tests:
+          - not_null
+
+  - name: fct_deliveries
+    description: >
+      Incremental delivery-level fact table joined with player and match dimensions.
+      Loads only new match_ids on incremental runs.
+    columns:
+      - name: match_id
+        description: Foreign key to fct_match_results.
+        tests:
+          - not_null
+      - name: inning_number
+        description: Inning number (1 or 2).
+        tests:
+          - not_null
+      - name: batting_team
+        description: Team currently batting.
+      - name: over_number
+        description: Over number within the inning.
+        tests:
+          - not_null
+      - name: ball_number
+        description: Ball position within the over.
+        tests:
+          - not_null
+      - name: batter
+        description: Name of the batter.
+        tests:
+          - not_null
+      - name: bowler
+        description: Name of the bowler.
+        tests:
+          - not_null
+      - name: non_striker
+        description: Name of the non-striking batter.
+      - name: runs_batter
+        description: Runs scored by the batter.
+      - name: runs_extras
+        description: Extra runs on this delivery.
+      - name: runs_total
+        description: Total runs on this delivery.
+      - name: extras_type
+        description: Type of extra, if any.
+      - name: is_wicket
+        description: True if a wicket fell on this delivery.
+      - name: wicket_kind
+        description: Method of dismissal.
+      - name: player_out
+        description: Dismissed player name.
+      - name: fielder
+        description: Fielder involved in the dismissal.
+      - name: is_boundary
+        description: True if batter scored 4 or more runs.
+      - name: is_six
+        description: True if batter scored 6 runs.
+      - name: is_four
+        description: True if batter scored exactly 4 runs.
+      - name: batter_id
+        description: Foreign key to dim_players for the batter.
+        tests:
+          - not_null
+      - name: bowler_id
+        description: Foreign key to dim_players for the bowler.
+        tests:
+          - not_null
+      - name: season
+        description: IPL season year from fct_match_results.
+      - name: match_date
+        description: Match date from fct_match_results.
+      - name: venue
+        description: Venue from fct_match_results.
+      - name: result_type
+        description: Result type from fct_match_results.
+
+  # ── Marts ──────────────────────────────────────────────────────────────────
+
+  - name: mart_batting_stats
+    description: >
+      Aggregated batting statistics per player per season, including runs,
+      balls faced, strike rate, average, boundary counts, and highest score.
+    columns:
+      - name: player_name
+        description: Batter name.
+        tests:
+          - not_null
+      - name: season
+        description: IPL season year.
+        tests:
+          - not_null
+      - name: innings_played
+        description: Number of innings the batter appeared in.
+        tests:
+          - not_null
+      - name: total_runs
+        description: Total runs scored across all innings in the season.
+        tests:
+          - not_null
+      - name: balls_faced
+        description: Total balls faced across all innings in the season.
+        tests:
+          - not_null
+      - name: strike_rate
+        description: Runs per 100 balls faced.
+      - name: average
+        description: Total runs divided by innings played.
+      - name: fours
+        description: Total number of fours hit in the season.
+      - name: sixes
+        description: Total number of sixes hit in the season.
+      - name: boundary_count
+        description: Total fours and sixes combined.
+      - name: highest_score
+        description: Highest runs scored in a single innings in the season.
+
+  - name: mart_bowling_stats
+    description: >
+      Aggregated bowling statistics per player per season, including wickets,
+      overs, economy rate, average, strike rate, and best match figures.
+    columns:
+      - name: player_name
+        description: Bowler name.
+        tests:
+          - not_null
+      - name: season
+        description: IPL season year.
+        tests:
+          - not_null
+      - name: balls_bowled
+        description: Total legal deliveries bowled in the season.
+        tests:
+          - not_null
+      - name: overs_bowled
+        description: Total overs bowled (balls / 6), rounded to one decimal.
+      - name: runs_conceded
+        description: Total runs conceded in the season.
+        tests:
+          - not_null
+      - name: total_wickets
+        description: Total wickets taken in the season.
+        tests:
+          - not_null
+      - name: economy_rate
+        description: Runs conceded per over.
+      - name: bowling_average
+        description: Runs conceded per wicket taken.
+      - name: bowling_strike_rate
+        description: Balls bowled per wicket taken.
+      - name: best_bowling_figures
+        description: Best single-match figures in the season (e.g. '4/23').
+
+  - name: mart_team_performance
+    description: >
+      Aggregated team performance per season, including win rates, toss
+      statistics, and average runs scored per match.
+    columns:
+      - name: team_name
+        description: Team name.
+        tests:
+          - not_null
+      - name: season
+        description: IPL season year.
+        tests:
+          - not_null
+      - name: matches_played
+        description: Total matches played in the season.
+        tests:
+          - not_null
+      - name: matches_won
+        description: Total matches won in the season.
+        tests:
+          - not_null
+      - name: win_rate
+        description: Percentage of matches won (0–100).
+      - name: toss_wins
+        description: Number of tosses won in the season.
+      - name: toss_win_to_match_win_rate
+        description: Percentage of toss wins that also resulted in a match win.
+      - name: avg_runs_per_match
+        description: Average runs scored per match innings in the season.
