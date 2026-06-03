@@ -23,7 +23,7 @@ def load_env():
     Raises:
         EnvironmentError: if any required variable is missing.
     """
-    load_dotenv()
+    load_dotenv(override=False)
 
     required_vars = [
         "AZURE_STORAGE_CONNECTION_STRING",
