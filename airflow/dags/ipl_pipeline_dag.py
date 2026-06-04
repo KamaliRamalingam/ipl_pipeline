@@ -27,6 +27,7 @@ CONTAINER      = os.getenv("AZURE_CONTAINER_NAME", "raw")
 DBT_ACCOUNT_ID = os.getenv("DBT_ACCOUNT_ID")
 DBT_JOB_ID     = os.getenv("DBT_JOB_ID")
 DBT_API_TOKEN  = os.getenv("DBT_API_TOKEN")
+DBT_BASE_URL   = os.getenv("DBT_BASE_URL", "https://ac498.us1.dbt.com")
 
 # ── Callable wrappers ─────────────────────────────────────────────────────────
 def run_download():
@@ -52,7 +53,15 @@ def run_load():
 
 def trigger_dbt_cloud():
     """Trigger dbt Cloud job via API to run staging and mart models."""
-    url = f"https://cloud.getdbt.com/api/v2/accounts/{DBT_ACCOUNT_ID}/jobs/{DBT_JOB_ID}/run/"
+
+    # Guard: fail immediately if credentials are missing
+    if not all([DBT_ACCOUNT_ID, DBT_JOB_ID, DBT_API_TOKEN]):
+        raise ValueError(
+            "Missing dbt Cloud credentials. Ensure DBT_ACCOUNT_ID, "
+            "DBT_JOB_ID, and DBT_API_TOKEN are set as environment variables."
+        )
+
+    url = f"{DBT_BASE_URL}/api/v2/accounts/{DBT_ACCOUNT_ID}/jobs/{DBT_JOB_ID}/run/"
     headers = {"Authorization": f"Token {DBT_API_TOKEN}"}
     payload = {"cause": "Triggered by Airflow — IPL pipeline"}
 
@@ -61,6 +70,7 @@ def trigger_dbt_cloud():
 
     run_id = response.json()["data"]["id"]
     print(f"dbt Cloud job triggered — run ID: {run_id}")
+    print(f"dbt Cloud run URL: {DBT_BASE_URL}/deploy/{DBT_ACCOUNT_ID}/projects/runs/{run_id}/")
     return run_id
 
 # ── Default args ──────────────────────────────────────────────────────────────

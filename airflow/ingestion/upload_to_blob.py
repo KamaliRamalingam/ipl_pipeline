@@ -1,9 +1,7 @@
 import os
 from pathlib import Path
-
 from azure.storage.blob import BlobServiceClient
 from azure.core.exceptions import ResourceNotFoundError
-
 from ingestion.utils import get_logger, load_env, retry
 
 logger = get_logger(__name__)
@@ -33,23 +31,23 @@ def upload_file(file_path, container_name, blob_path):
     """
     client = get_blob_client()
     blob_client = client.get_blob_client(container=container_name, blob=blob_path)
-
     try:
         blob_client.get_blob_properties()
         logger.info("Skipping %s — blob already exists", blob_path)
         return "skipped"
     except ResourceNotFoundError:
         pass
-
     with open(file_path, "rb") as f:
         blob_client.upload_blob(f)
-
     logger.info("Uploaded %s", Path(file_path).name)
     return "uploaded"
 
 
 def upload_all_files(data_folder, container_name):
     """Upload all JSON files in data_folder to Azure Blob Storage under the 'ipl/' prefix.
+
+    Uses a single list call to check existing blobs instead of one HEAD request per file,
+    reducing API calls from O(n) to O(1) for the existence check.
 
     Args:
         data_folder: Path string to the local folder containing .json files.
@@ -62,16 +60,30 @@ def upload_all_files(data_folder, container_name):
     json_files = sorted(folder.glob("*.json"))
     total = len(json_files)
 
+    # ── Fetch all existing blobs in ONE API call ──────────────────────────────
+    client = get_blob_client()
+    container_client = client.get_container_client(container_name)
+    existing_blobs = {
+        blob.name
+        for blob in container_client.list_blobs(name_starts_with="ipl/")
+    }
+    logger.info("Found %d existing blobs in container", len(existing_blobs))
+
+    # ── Upload only new files ─────────────────────────────────────────────────
     uploaded_count = 0
     skipped_count = 0
 
     for idx, file_path in enumerate(json_files, start=1):
         blob_path = f"ipl/{file_path.name}"
-        result = upload_file(file_path, container_name, blob_path)
-        if result == "uploaded":
-            uploaded_count += 1
-        else:
+
+        if blob_path in existing_blobs:
+            logger.info("Skipping %s — blob already exists", blob_path)
             skipped_count += 1
+        else:
+            with open(file_path, "rb") as f:
+                container_client.upload_blob(name=blob_path, data=f)
+            logger.info("Uploaded %s", file_path.name)
+            uploaded_count += 1
 
         if idx % 100 == 0:
             logger.info("Processed %d/%d files", idx, total)
