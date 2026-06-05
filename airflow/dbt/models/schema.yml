@@ -458,3 +458,29 @@ models:
         description: Percentage of toss wins that also resulted in a match win.
       - name: avg_runs_per_match
         description: Average runs scored per match innings in the season.
+
+  - name: mart_titles_won
+    description: "One row per IPL-winning team. Filters FCT_MATCH_RESULTS to Finals only."
+    columns:
+      - name: team_name
+        description: "IPL franchise name"
+        tests:
+          - not_null
+          - unique
+      - name: titles_won
+        description: "Total number of IPL titles won"
+        tests:
+          - not_null
+
+  - name: mart_player_career_stats
+    description: "Career aggregated batting and bowling stats per player across all seasons"
+    columns:
+      - name: player_name
+        description: "Player full name"
+        tests:
+          - not_null
+          - unique
+      - name: career_runs
+        description: "Total runs scored across all IPL seasons"
+        tests:
+          - not_null

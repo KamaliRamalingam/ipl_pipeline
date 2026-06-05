@@ -459,18 +459,17 @@ models:
       - name: avg_runs_per_match
         description: Average runs scored per match innings in the season.
 
-        
-- name: mart_titles_won
+  - name: mart_titles_won
     description: "One row per IPL-winning team. Filters FCT_MATCH_RESULTS to Finals only."
     columns:
       - name: team_name
         description: "IPL franchise name"
-        data_tests:
+        tests:
           - not_null
           - unique
       - name: titles_won
         description: "Total number of IPL titles won"
-        data_tests:
+        tests:
           - not_null
 
   - name: mart_player_career_stats
@@ -478,10 +477,10 @@ models:
     columns:
       - name: player_name
         description: "Player full name"
-        data_tests:
+        tests:
           - not_null
           - unique
       - name: career_runs
         description: "Total runs scored across all IPL seasons"
-        data_tests:
+        tests:
           - not_null
