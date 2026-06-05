@@ -35,7 +35,7 @@ models:
     # for join performance
     dimensions:
       +materialized: table
-      +schema: STAGING
+      +schema: MARTS
 
     # Facts: large grain tables, stored for query speed
     facts:
