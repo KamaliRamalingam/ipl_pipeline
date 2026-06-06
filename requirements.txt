@@ -1,2 +1,5 @@
 vaderSentiment==3.3.2
-requests==2.31.0
+requests>=2.32.0
+azure-storage-blob>=12.19.0
+snowflake-connector-python>=3.6.0
+python-dotenv>=1.0.0

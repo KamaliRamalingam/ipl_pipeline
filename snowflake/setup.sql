@@ -155,7 +155,7 @@ CREATE TABLE IF NOT EXISTS IPL_DB.RAW.REDDIT_IPL_POSTS (
     SENTIMENT_NEGATIVE      FLOAT,
     SENTIMENT_NEUTRAL       FLOAT,
     SENTIMENT_LABEL         VARCHAR(16),
-    RAW_JSON                VARIANT
+    RAW_JSON                VARCHAR(16000)
 );
 
 -- Grant access to existing roles

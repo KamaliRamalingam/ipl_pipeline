@@ -16,7 +16,7 @@ INSERT INTO IPL_DB.RAW.REDDIT_IPL_POSTS (
     CREATED_UTC, FETCHED_AT,
     SENTIMENT_COMPOUND, SENTIMENT_POSITIVE, SENTIMENT_NEGATIVE, SENTIMENT_NEUTRAL, SENTIMENT_LABEL,
     RAW_JSON
-) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, PARSE_JSON(%s))
+) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
 """
 
 
