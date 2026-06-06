@@ -129,3 +129,35 @@ CREATE TABLE IF NOT EXISTS RAW_DELIVERIES (
 
 
 
+
+-- =============================================================
+-- BLOCK 5 — Reddit Sentiment Raw Table
+-- Populated by Airflow reddit_sentiment_pipeline DAG (every 10 min)
+-- VARIANT column RAW_JSON stores the full post for schema-on-read
+-- =============================================================
+CREATE TABLE IF NOT EXISTS IPL_DB.RAW.REDDIT_IPL_POSTS (
+    PIPELINE_LOAD_ID        VARCHAR(64)     NOT NULL,
+    PIPELINE_LOADED_AT      TIMESTAMP_NTZ   NOT NULL,
+    PIPELINE_BATCH_FILE     VARCHAR(512),
+    POST_ID                 VARCHAR(32)     NOT NULL,
+    POST_TITLE              VARCHAR(4000),
+    POST_AUTHOR             VARCHAR(256),
+    SUBREDDIT               VARCHAR(128),
+    POST_URL                VARCHAR(2048),
+    POST_BODY               VARCHAR(40000),
+    SCORE                   NUMBER,
+    UPVOTE_RATIO            FLOAT,
+    NUM_COMMENTS            NUMBER,
+    CREATED_UTC             TIMESTAMP_NTZ,
+    FETCHED_AT              TIMESTAMP_NTZ   NOT NULL,
+    SENTIMENT_COMPOUND      FLOAT,
+    SENTIMENT_POSITIVE      FLOAT,
+    SENTIMENT_NEGATIVE      FLOAT,
+    SENTIMENT_NEUTRAL       FLOAT,
+    SENTIMENT_LABEL         VARCHAR(16),
+    RAW_JSON                VARIANT
+);
+
+-- Grant access to existing roles
+GRANT SELECT ON TABLE IPL_DB.RAW.REDDIT_IPL_POSTS TO ROLE DBT_ROLE;
+GRANT INSERT ON TABLE IPL_DB.RAW.REDDIT_IPL_POSTS TO ROLE INGESTION_ROLE;
