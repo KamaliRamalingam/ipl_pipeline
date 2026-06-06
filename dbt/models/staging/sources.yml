@@ -1,0 +1,51 @@
+version: 2
+
+sources:
+  - name: raw
+    database: IPL_DB
+    schema: RAW
+    description: Raw landing tables loaded by the ingestion pipeline.
+    tables:
+      - name: REDDIT_IPL_POSTS
+        description: >
+          Raw Reddit r/Cricket posts scored with VADER sentiment analysis.
+          Loaded every 10 minutes by the Airflow reddit_sentiment_pipeline DAG.
+        columns:
+          - name: POST_ID
+            description: Reddit post ID (unique within a subreddit).
+            tests:
+              - not_null
+          - name: POST_TITLE
+            description: Title of the Reddit post.
+          - name: POST_AUTHOR
+            description: Reddit username of the post author.
+          - name: POST_BODY
+            description: Self-text body of the post; empty string for link posts.
+          - name: SCORE
+            description: Reddit upvote score at time of fetch.
+          - name: UPVOTE_RATIO
+            description: Ratio of upvotes to total votes (0.0–1.0).
+          - name: NUM_COMMENTS
+            description: Number of comments at time of fetch.
+          - name: CREATED_UTC
+            description: UTC datetime when the post was created on Reddit.
+          - name: FETCHED_AT
+            description: UTC datetime when the Airflow task fetched this post.
+          - name: PIPELINE_LOAD_ID
+            description: UUID identifying the DAG run batch that inserted this row.
+          - name: PIPELINE_LOADED_AT
+            description: UTC datetime when the row was inserted into Snowflake.
+          - name: PIPELINE_BATCH_FILE
+            description: Azure Blob path of the raw JSON file for this batch.
+          - name: SENTIMENT_COMPOUND
+            description: VADER compound score (-1.0 to +1.0).
+          - name: SENTIMENT_POSITIVE
+            description: VADER positive score (0.0 to 1.0).
+          - name: SENTIMENT_NEGATIVE
+            description: VADER negative score (0.0 to 1.0).
+          - name: SENTIMENT_NEUTRAL
+            description: VADER neutral score (0.0 to 1.0).
+          - name: SENTIMENT_LABEL
+            description: Derived label — POSITIVE, NEGATIVE, or NEUTRAL.
+          - name: RAW_JSON
+            description: Full post dict as a Snowflake VARIANT for schema-on-read access.

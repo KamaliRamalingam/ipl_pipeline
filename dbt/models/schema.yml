@@ -459,6 +459,50 @@ models:
       - name: avg_runs_per_match
         description: Average runs scored per match innings in the season.
 
+  - name: stg_reddit_sentiment
+    description: >
+      Cleaned and renamed Reddit r/Cricket posts with VADER sentiment scores.
+      Sourced from IPL_DB.RAW.REDDIT_IPL_POSTS, refreshed every 10 minutes
+      by the Airflow reddit_sentiment_pipeline DAG. Materialised as a view.
+    columns:
+      - name: post_id
+        description: Reddit post ID, unique within a subreddit.
+        tests:
+          - not_null
+          - unique
+      - name: title
+        description: Title of the Reddit post.
+      - name: author
+        description: Reddit username of the post author.
+      - name: body
+        description: Self-text body of the post; empty string for link posts.
+      - name: reddit_score
+        description: Reddit upvote score at time of fetch.
+      - name: num_comments
+        description: Number of comments at time of fetch.
+      - name: post_created_at
+        description: UTC datetime when the post was created on Reddit.
+      - name: fetched_at
+        description: UTC datetime when the Airflow task fetched this post.
+      - name: loaded_at
+        description: UTC datetime when the row was inserted into Snowflake.
+      - name: sentiment_score
+        description: VADER compound score ranging from -1.0 (most negative) to +1.0 (most positive).
+      - name: sentiment_label
+        description: Derived sentiment classification — POSITIVE, NEGATIVE, or NEUTRAL.
+        tests:
+          - accepted_values:
+              arguments:
+                values: ['POSITIVE', 'NEGATIVE', 'NEUTRAL']
+      - name: sentiment_pos
+        description: VADER positive score (0.0 to 1.0).
+      - name: sentiment_neg
+        description: VADER negative score (0.0 to 1.0).
+      - name: sentiment_neu
+        description: VADER neutral score (0.0 to 1.0).
+      - name: post_date
+        description: Date portion of post_created_at, used for daily aggregation in mart_ipl_sentiment.
+
   - name: mart_titles_won
     description: "One row per IPL-winning team. Filters FCT_MATCH_RESULTS to Finals only."
     columns:
@@ -484,3 +528,34 @@ models:
         description: "Total runs scored across all IPL seasons"
         tests:
           - not_null
+
+  - name: mart_ipl_sentiment
+    description: >
+      Daily IPL sentiment summary from Reddit r/Cricket. Refreshed every 10
+      minutes by the Airflow micro-batch pipeline.
+    columns:
+      - name: post_date
+        description: Calendar date of the Reddit posts being summarised.
+        tests:
+          - not_null
+          - unique
+      - name: total_posts
+        description: Total Reddit posts fetched on this date.
+        tests:
+          - not_null
+      - name: avg_sentiment_score
+        description: Average VADER compound score across all posts on this date, rounded to 4 decimal places.
+      - name: positive_posts
+        description: Count of posts labelled POSITIVE.
+      - name: negative_posts
+        description: Count of posts labelled NEGATIVE.
+      - name: neutral_posts
+        description: Count of posts labelled NEUTRAL.
+      - name: positive_pct
+        description: Percentage of posts labelled POSITIVE (0–100), rounded to 2 decimal places.
+      - name: negative_pct
+        description: Percentage of posts labelled NEGATIVE (0–100), rounded to 2 decimal places.
+      - name: max_sentiment_score
+        description: Highest VADER compound score recorded on this date.
+      - name: min_sentiment_score
+        description: Lowest VADER compound score recorded on this date.

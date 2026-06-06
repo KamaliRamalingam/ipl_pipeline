@@ -25,3 +25,4 @@ dbt/.user.yml
 airflow/data/
 airflow/dbt/target/
 airflow/dbt/logs/
+.astro/
