@@ -18,6 +18,8 @@ import os
 import uuid
 from datetime import datetime, timedelta
 
+import requests as http_requests
+
 from airflow.sdk import dag, task
 
 from ingestion.utils import get_logger
@@ -147,10 +149,30 @@ def reddit_sentiment_pipeline():
             blob_path,
         )
 
+    @task()
+    def trigger_dbt_job() -> None:
+        """Trigger dbt Cloud job to refresh stg_reddit_sentiment and mart_ipl_sentiment."""
+        account_id = os.environ["DBT_ACCOUNT_ID"]
+        job_id = os.environ["DBT_REDDIT_JOB_ID"]
+        api_token = os.environ["DBT_API_TOKEN"]
+        base_url = os.environ.get("DBT_BASE_URL", "https://cloud.getdbt.com")
+
+        url = f"{base_url}/api/v2/accounts/{account_id}/jobs/{job_id}/run/"
+        headers = {
+            "Authorization": f"Token {api_token}",
+            "Content-Type": "application/json",
+        }
+        payload = {"cause": "Triggered by Airflow reddit_sentiment_pipeline"}
+
+        response = http_requests.post(url, headers=headers, json=payload, timeout=30)
+        response.raise_for_status()
+        run_id = response.json()["data"]["id"]
+        logger.info("dbt Cloud job triggered successfully. Run ID: %s", run_id)
+
     posts = extract_posts()
     scored = score_sentiment(posts)
     blob_path = upload_to_blob(scored)
-    load_to_snowflake(scored, blob_path)
+    load_to_snowflake(scored, blob_path) >> trigger_dbt_job()
 
 
 reddit_sentiment_pipeline()
