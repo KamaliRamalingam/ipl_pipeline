@@ -462,7 +462,7 @@ models:
   - name: stg_reddit_sentiment
     description: >
       Cleaned and renamed Reddit r/Cricket posts with VADER sentiment scores.
-      Sourced from IPL_DB.RAW.REDDIT_IPL_POSTS, refreshed every 10 minutes
+      Sourced from IPL_DB.RAW.REDDIT_IPL_POSTS, refreshed every 15 minutes
       by the Airflow reddit_sentiment_pipeline DAG. Materialised as a view.
     columns:
       - name: post_id
