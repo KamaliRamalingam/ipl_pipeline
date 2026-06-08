@@ -51,6 +51,34 @@ def run_load():
     load_deliveries(conn, deliveries)
     conn.close()
 
+def run_log_pipeline():
+    """Merge a SUCCESS row into IPL_DB.MARTS.PIPELINE_RUN_LOG for this run."""
+    conn = get_snowflake_connection()
+    try:
+        cursor = conn.cursor()
+        try:
+            cursor.execute("""
+                MERGE INTO IPL_DB.MARTS.PIPELINE_RUN_LOG AS target
+                USING (
+                    SELECT 'ipl_cricket_pipeline' AS PIPELINE_NAME,
+                           'Batch'                AS RUN_TYPE
+                ) AS source
+                ON  target.PIPELINE_NAME = source.PIPELINE_NAME
+                AND target.RUN_TYPE      = source.RUN_TYPE
+                WHEN MATCHED THEN UPDATE SET
+                    LAST_RUN_AT = CURRENT_TIMESTAMP(),
+                    STATUS      = 'SUCCESS'
+                WHEN NOT MATCHED THEN INSERT
+                    (PIPELINE_NAME, RUN_TYPE, LAST_RUN_AT, STATUS)
+                VALUES
+                    ('ipl_cricket_pipeline', 'Batch', CURRENT_TIMESTAMP(), 'SUCCESS')
+            """)
+            conn.commit()
+        finally:
+            cursor.close()
+    finally:
+        conn.close()
+
 def trigger_dbt_cloud():
     """Trigger dbt Cloud job via API to run staging and mart models."""
 
@@ -117,5 +145,10 @@ with DAG(
         python_callable=trigger_dbt_cloud,
     )
 
+    log_pipeline_run = PythonOperator(
+        task_id="log_pipeline_run",
+        python_callable=run_log_pipeline,
+    )
+
     # ── Dependencies ──────────────────────────────────────────────────────────
-    download_cricsheet >> parse_json >> upload_to_blob >> load_to_snowflake >> run_dbt
+    download_cricsheet >> parse_json >> upload_to_blob >> load_to_snowflake >> run_dbt >> log_pipeline_run

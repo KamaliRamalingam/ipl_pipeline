@@ -169,10 +169,49 @@ def reddit_sentiment_pipeline():
         run_id = response.json()["data"]["id"]
         logger.info("dbt Cloud job triggered successfully. Run ID: %s", run_id)
 
+    @task()
+    def log_pipeline_run() -> None:
+        """Merge a SUCCESS row into IPL_DB.MARTS.PIPELINE_RUN_LOG for this run."""
+        import snowflake.connector
+
+        conn = snowflake.connector.connect(
+            account=os.environ["SNOWFLAKE_ACCOUNT"],
+            user=os.environ["SNOWFLAKE_USER"],
+            password=os.environ["SNOWFLAKE_PASSWORD"],
+            database=os.environ["SNOWFLAKE_DATABASE"],
+            warehouse=os.environ["SNOWFLAKE_WAREHOUSE"],
+            role=os.environ["SNOWFLAKE_ROLE"],
+        )
+        try:
+            cursor = conn.cursor()
+            try:
+                cursor.execute("""
+                    MERGE INTO IPL_DB.MARTS.PIPELINE_RUN_LOG AS target
+                    USING (
+                        SELECT 'reddit_sentiment_pipeline' AS PIPELINE_NAME,
+                               'Micro Batch'               AS RUN_TYPE
+                    ) AS source
+                    ON  target.PIPELINE_NAME = source.PIPELINE_NAME
+                    AND target.RUN_TYPE      = source.RUN_TYPE
+                    WHEN MATCHED THEN UPDATE SET
+                        LAST_RUN_AT = CURRENT_TIMESTAMP(),
+                        STATUS      = 'SUCCESS'
+                    WHEN NOT MATCHED THEN INSERT
+                        (PIPELINE_NAME, RUN_TYPE, LAST_RUN_AT, STATUS)
+                    VALUES
+                        ('reddit_sentiment_pipeline', 'Micro Batch', CURRENT_TIMESTAMP(), 'SUCCESS')
+                """)
+                conn.commit()
+            finally:
+                cursor.close()
+        finally:
+            conn.close()
+        logger.info("Pipeline run logged to IPL_DB.MARTS.PIPELINE_RUN_LOG")
+
     posts = extract_posts()
     scored = score_sentiment(posts)
     blob_path = upload_to_blob(scored)
-    load_to_snowflake(scored, blob_path) >> trigger_dbt_job()
+    load_to_snowflake(scored, blob_path) >> trigger_dbt_job() >> log_pipeline_run()
 
 
 reddit_sentiment_pipeline()
