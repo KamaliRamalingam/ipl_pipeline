@@ -1,12 +1,12 @@
 """Reddit IPL Sentiment Micro-Batch DAG.
 
-Runs every 10 minutes to fetch recent posts from Reddit r/Cricket, score
+Runs every 15 minutes to fetch recent posts from Reddit r/Cricket, score
 them with VADER sentiment analysis, archive the raw JSON to Azure Blob
 Storage, and load the scored rows into Snowflake RAW.REDDIT_IPL_POSTS.
 
-Schedule: */10 * * * *  (every 10 minutes)
+Schedule: */15 * * * *  (every 15 minutes)
 max_active_runs=1 prevents overlapping runs if a batch takes longer than
-10 minutes (e.g. slow Snowflake connection).
+15 minutes (e.g. slow Snowflake connection).
 
 Dependencies (task order):
     extract_posts → score_sentiment → upload_to_blob → load_to_snowflake
