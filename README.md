@@ -479,6 +479,16 @@ ipl_pipeline/
 │       └── snowflake_loader.py                 ← load scored records to Snowflake RAW
 ├── dags/
 │   └── reddit_sentiment_dag.py                 ← Airflow micro-batch DAG
+
+> ⚠️ Note: airflow/dags/ is the single source of truth for all DAG files.
+> The root dags/ folder is a mirror. Always edit DAGs in airflow/dags/ first,
+> then run the following to sync:
+>
+> ```
+> cp airflow/dags/*.py dags/
+> ```
+>
+> Never edit root dags/ directly.
 ├── snowflake/
 │   └── reddit_raw_ddl.sql                      ← run once before first DAG run
 └── dbt/
