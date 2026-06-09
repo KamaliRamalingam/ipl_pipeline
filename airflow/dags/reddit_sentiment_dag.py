@@ -16,7 +16,7 @@ Dependencies (task order):
 
 import os
 import uuid
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 import requests as http_requests
 
@@ -63,7 +63,7 @@ def reddit_sentiment_pipeline():
         subreddit = os.environ.get("REDDIT_SUBREDDIT", "Cricket")
         query = os.environ.get("REDDIT_SEARCH_QUERY", "IPL")
         limit = int(os.environ.get("REDDIT_MAX_POSTS", 25))
-        fetched_at = datetime.utcnow()
+        fetched_at = datetime.now(timezone.utc)
 
         posts = fetch_reddit_posts(subreddit, query, limit, fetched_at)
 
@@ -172,16 +172,12 @@ def reddit_sentiment_pipeline():
     @task()
     def log_pipeline_run() -> None:
         """Merge a SUCCESS row into IPL_DB.MARTS.PIPELINE_RUN_LOG for this run."""
-        import snowflake.connector
+        from ingestion.load_to_snowflake import get_snowflake_connection
+        from datetime import datetime, timezone
 
-        conn = snowflake.connector.connect(
-            account=os.environ["SNOWFLAKE_ACCOUNT"],
-            user=os.environ["SNOWFLAKE_USER"],
-            password=os.environ["SNOWFLAKE_PASSWORD"],
-            database=os.environ["SNOWFLAKE_DATABASE"],
-            warehouse=os.environ["SNOWFLAKE_WAREHOUSE"],
-            role=os.environ["SNOWFLAKE_ROLE"],
-        )
+        run_at = datetime.now(timezone.utc)
+
+        conn = get_snowflake_connection()
         try:
             cursor = conn.cursor()
             try:
@@ -189,18 +185,18 @@ def reddit_sentiment_pipeline():
                     MERGE INTO IPL_DB.MARTS.PIPELINE_RUN_LOG AS target
                     USING (
                         SELECT 'reddit_sentiment_pipeline' AS PIPELINE_NAME,
-                               'Micro Batch'               AS RUN_TYPE
+                            'Micro Batch'               AS RUN_TYPE
                     ) AS source
                     ON  target.PIPELINE_NAME = source.PIPELINE_NAME
                     AND target.RUN_TYPE      = source.RUN_TYPE
                     WHEN MATCHED THEN UPDATE SET
-                        LAST_RUN_AT = CURRENT_TIMESTAMP(),
+                        LAST_RUN_AT = %(run_at)s,
                         STATUS      = 'SUCCESS'
                     WHEN NOT MATCHED THEN INSERT
                         (PIPELINE_NAME, RUN_TYPE, LAST_RUN_AT, STATUS)
                     VALUES
-                        ('reddit_sentiment_pipeline', 'Micro Batch', CURRENT_TIMESTAMP(), 'SUCCESS')
-                """)
+                        ('reddit_sentiment_pipeline', 'Micro Batch', %(run_at)s, 'SUCCESS')
+                """, {"run_at": run_at})
                 conn.commit()
             finally:
                 cursor.close()

@@ -3,7 +3,7 @@
 import sys
 import os
 import requests as http_requests
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from airflow import DAG
 from airflow.providers.standard.operators.python import PythonOperator
@@ -53,6 +53,10 @@ def run_load():
 
 def run_log_pipeline():
     """Merge a SUCCESS row into IPL_DB.MARTS.PIPELINE_RUN_LOG for this run."""
+    from datetime import datetime, timezone
+    
+    run_at = datetime.now(timezone.utc)
+    
     conn = get_snowflake_connection()
     try:
         cursor = conn.cursor()
@@ -60,19 +64,19 @@ def run_log_pipeline():
             cursor.execute("""
                 MERGE INTO IPL_DB.MARTS.PIPELINE_RUN_LOG AS target
                 USING (
-                    SELECT 'ipl_cricket_pipeline' AS PIPELINE_NAME,
-                           'Batch'                AS RUN_TYPE
+                    SELECT 'ipl_pipeline' AS PIPELINE_NAME,
+                           'Batch'        AS RUN_TYPE
                 ) AS source
                 ON  target.PIPELINE_NAME = source.PIPELINE_NAME
                 AND target.RUN_TYPE      = source.RUN_TYPE
                 WHEN MATCHED THEN UPDATE SET
-                    LAST_RUN_AT = CURRENT_TIMESTAMP(),
+                    LAST_RUN_AT = %(run_at)s,
                     STATUS      = 'SUCCESS'
                 WHEN NOT MATCHED THEN INSERT
                     (PIPELINE_NAME, RUN_TYPE, LAST_RUN_AT, STATUS)
                 VALUES
-                    ('ipl_cricket_pipeline', 'Batch', CURRENT_TIMESTAMP(), 'SUCCESS')
-            """)
+                    ('ipl_pipeline', 'Batch', %(run_at)s, 'SUCCESS')
+            """, {"run_at": run_at})
             conn.commit()
         finally:
             cursor.close()
